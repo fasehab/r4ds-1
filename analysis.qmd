@@ -1,9 +1,200 @@
 ---
 title: "Analyzing Music Data"
-author: "Antigravity"
+author: "fasehab"
 format: html
+execute:
+  echo: false
 ---
+
+```{r}
+#| message: false
+library(tidyverse)
+```
+
 
 ## Introduction
 
 This is a Quarto document for analyzing music data.
+
+```{r}
+billboard |> 
+  select(artist, track, date.entered, wk1, wk2, wk3, wk4)
+```
+
+```{r}
+n_values <- sum(!is.na(billboard$wk6))
+
+ggplot(billboard, aes(x = wk6)) +
+  geom_histogram(binwidth = 5, fill = "steelblue", color = "white") +
+  labs(
+    title = "Distribution of Week 6 Rankings",
+    subtitle = paste("Number of values used:", n_values),
+    x = "Week 6 Rank",
+    y = "Count"
+  )
+```
+
+## Missing vs. Present Rankings
+
+```{r}
+billboard |> 
+  select(wk1, wk4, wk10, wk20, wk40, wk76) |> 
+  pivot_longer(
+    cols = everything(),
+    names_to = "week",
+    values_to = "rank"
+  ) |> 
+  mutate(week = factor(week, levels = c("wk1", "wk4", "wk10", "wk20", "wk40", "wk76"))) |> 
+  group_by(week) |> 
+  summarise(
+    present = sum(!is.na(rank)),
+    missing = sum(is.na(rank))
+  )
+```
+
+## Re-entering Songs
+
+We can check if any songs leave the chart and later re-enter it by comparing the actual number of weeks they were on the chart to the total span between their first and last appearance. If a song's total span of weeks is greater than the number of weeks it actually had a ranking, it must have left the chart and re-entered.
+
+```{r}
+billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"),
+    names_to = "week",
+    values_to = "rank"
+  ) |> 
+  mutate(week = as.integer(str_remove(week, "wk"))) |> 
+  filter(!is.na(rank)) |> 
+  group_by(artist, track) |> 
+  summarise(
+    first_wk = min(week),
+    last_wk = max(week),
+    weeks_on_chart = n(),
+    expected_weeks = last_wk - first_wk + 1,
+    re_entered = weeks_on_chart < expected_weeks,
+    .groups = "drop"
+  ) |> 
+  count(re_entered)
+```
+
+## Song Rankings Over Time
+
+We reshape the `billboard` dataset to convert the week columns (`wk1` to `wk76`) into a long format with two columns: `week` and `rank`. Then, we plot each song's ranking over time.
+
+```{r}
+billboard_long <- billboard |> 
+  pivot_longer(
+    cols = starts_with("wk"),
+    names_to = "week",
+    values_to = "rank",
+    values_drop_na = TRUE
+  ) |> 
+  mutate(week = as.integer(str_remove(week, "wk")))
+
+ggplot(billboard_long, aes(x = week, y = rank, group = interaction(artist, track))) +
+  geom_line(alpha = 0.25) +
+  scale_y_reverse() +
+  labs(
+    title = "Song Rankings Over Time",
+    x = "Week",
+    y = "Rank"
+  )
+```
+
+## Song-Level Summary and Notable Songs
+
+We construct a song-level summary displaying:
+- **First rank**: The song's rank when it entered the chart.
+- **Best rank**: The song's peak rank (minimum rank number).
+- **First week at its best rank**: The week it first reached its peak rank.
+- **Total weeks on the chart**: The total number of weeks the song remained on the chart.
+
+We then identify three notable top-10 songs:
+1. **The fastest song to reach #1** (minimum week to reach rank 1).
+2. **The slowest song to reach #1** (maximum week to reach rank 1).
+3. **The top-10 song with the longest chart run** (maximum total weeks on chart for a song whose best rank was <= 10).
+
+```{r}
+song_summary <- billboard_long |> 
+  group_by(artist, track) |> 
+  summarise(
+    first_rank = rank[week == min(week)][1],
+    best_rank = min(rank),
+    first_week_at_best_rank = min(week[rank == best_rank]),
+    total_weeks_on_chart = n(),
+    .groups = "drop"
+  )
+
+# Display the first few rows of the summary
+head(song_summary)
+
+# 1. Fastest song to reach number one
+song_summary |> 
+  filter(best_rank == 1) |> 
+  filter(first_week_at_best_rank == min(first_week_at_best_rank))
+
+# 2. Slowest song to reach number one
+song_summary |> 
+  filter(best_rank == 1) |> 
+  filter(first_week_at_best_rank == max(first_week_at_best_rank))
+
+# 3. Top-10 song with the longest chart run
+song_summary |> 
+  filter(best_rank <= 10) |> 
+  filter(total_weeks_on_chart == max(total_weeks_on_chart))
+```
+
+## Highlighting Notable Top-10 Songs
+
+We filter the dataset to include only songs that reached the top 10 (peak rank <= 10). We display these songs in gray, while highlighting the three notable songs identified in the previous exercise with distinct colors and a legend.
+
+```{r}
+#| cache: true
+top10_songs <- song_summary |> 
+  filter(best_rank <= 10) |> 
+  select(artist, track)
+
+billboard_top10 <- billboard_long |> 
+  semi_join(top10_songs, by = c("artist", "track")) |> 
+  mutate(
+    highlight = case_when(
+      artist == "Madonna" & track == "Music" ~ "Madonna - Music (Fastest #1)",
+      artist == "Lonestar" & track == "Amazed" ~ "Lonestar - Amazed (Slowest #1)",
+      artist == "Creed" & track == "Higher" ~ "Creed - Higher (Longest Run)",
+      TRUE ~ "Other Top-10 Songs"
+    )
+  )
+
+background_data <- billboard_top10 |> filter(highlight == "Other Top-10 Songs")
+highlight_data <- billboard_top10 |> filter(highlight != "Other Top-10 Songs")
+
+ggplot() +
+  geom_line(
+    data = background_data,
+    aes(x = week, y = rank, group = interaction(artist, track)),
+    color = "gray80",
+    alpha = 0.5,
+    linewidth = 0.5
+  ) +
+  geom_line(
+    data = highlight_data,
+    aes(x = week, y = rank, color = highlight, group = interaction(artist, track)),
+    linewidth = 1.2
+  ) +
+  scale_y_reverse() +
+  scale_color_manual(
+    values = c(
+      "Madonna - Music (Fastest #1)" = "tomato",
+      "Lonestar - Amazed (Slowest #1)" = "dodgerblue",
+      "Creed - Higher (Longest Run)" = "forestgreen"
+    ),
+    name = "Notable Songs"
+  ) +
+  labs(
+    title = "Rankings of Top-10 Songs Over Time",
+    subtitle = "Highlighting three notable songs",
+    x = "Week",
+    y = "Rank"
+  )
+```
+

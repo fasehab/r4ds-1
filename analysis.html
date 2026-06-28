@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Antigravity">
+<meta name="author" content="fasehab">
 
 <title>Analyzing Music Data</title>
 <style>
@@ -60,7 +60,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Antigravity </p>
+             <p>fasehab </p>
           </div>
   </div>
     
@@ -76,6 +76,132 @@ ul.task-list li input[type="checkbox"] {
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>This is a Quarto document for analyzing music data.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 317 × 7
+   artist         track                   date.entered   wk1   wk2   wk3   wk4
+   &lt;chr&gt;          &lt;chr&gt;                   &lt;date&gt;       &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+ 1 2 Pac          Baby Don't Cry (Keep... 2000-02-26      87    82    72    77
+ 2 2Ge+her        The Hardest Part Of ... 2000-09-02      91    87    92    NA
+ 3 3 Doors Down   Kryptonite              2000-04-08      81    70    68    67
+ 4 3 Doors Down   Loser                   2000-10-21      76    76    72    69
+ 5 504 Boyz       Wobble Wobble           2000-04-15      57    34    25    17
+ 6 98^0           Give Me Just One Nig... 2000-08-19      51    39    34    26
+ 7 A*Teens        Dancing Queen           2000-07-08      97    97    96    95
+ 8 Aaliyah        I Don't Wanna           2000-01-29      84    62    51    41
+ 9 Aaliyah        Try Again               2000-03-18      59    53    38    28
+10 Adams, Yolanda Open My Heart           2000-08-26      76    76    74    69
+# ℹ 307 more rows</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 37 rows containing non-finite outside the scale range
+(`stat_bin()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="missing-vs.-present-rankings" class="level2">
+<h2 class="anchored" data-anchor-id="missing-vs.-present-rankings">Missing vs.&nbsp;Present Rankings</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 3
+  week  present missing
+  &lt;fct&gt;   &lt;int&gt;   &lt;int&gt;
+1 wk1       317       0
+2 wk4       300      17
+3 wk10      244      73
+4 wk20      146     171
+5 wk40        7     310
+6 wk76        0     317</code></pre>
+</div>
+</div>
+</section>
+<section id="re-entering-songs" class="level2">
+<h2 class="anchored" data-anchor-id="re-entering-songs">Re-entering Songs</h2>
+<p>We can check if any songs leave the chart and later re-enter it by comparing the actual number of weeks they were on the chart to the total span between their first and last appearance. If a song’s total span of weeks is greater than the number of weeks it actually had a ranking, it must have left the chart and re-entered.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  re_entered     n
+  &lt;lgl&gt;      &lt;int&gt;
+1 FALSE        302
+2 TRUE          15</code></pre>
+</div>
+</div>
+</section>
+<section id="song-rankings-over-time" class="level2">
+<h2 class="anchored" data-anchor-id="song-rankings-over-time">Song Rankings Over Time</h2>
+<p>We reshape the <code>billboard</code> dataset to convert the week columns (<code>wk1</code> to <code>wk76</code>) into a long format with two columns: <code>week</code> and <code>rank</code>. Then, we plot each song’s ranking over time.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="song-level-summary-and-notable-songs" class="level2">
+<h2 class="anchored" data-anchor-id="song-level-summary-and-notable-songs">Song-Level Summary and Notable Songs</h2>
+<p>We construct a song-level summary displaying: - <strong>First rank</strong>: The song’s rank when it entered the chart. - <strong>Best rank</strong>: The song’s peak rank (minimum rank number). - <strong>First week at its best rank</strong>: The week it first reached its peak rank. - <strong>Total weeks on the chart</strong>: The total number of weeks the song remained on the chart.</p>
+<p>We then identify three notable top-10 songs: 1. <strong>The fastest song to reach #1</strong> (minimum week to reach rank 1). 2. <strong>The slowest song to reach #1</strong> (maximum week to reach rank 1). 3. <strong>The top-10 song with the longest chart run</strong> (maximum total weeks on chart for a song whose best rank was &lt;= 10).</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 6
+  artist  track first_rank best_rank first_week_at_best_r…¹ total_weeks_on_chart
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;                  &lt;int&gt;                &lt;int&gt;
+1 2 Pac   Baby…         87        72                      3                    7
+2 2Ge+her The …         91        87                      2                    3
+3 3 Door… Kryp…         81         3                     32                   53
+4 3 Door… Loser         76        55                      7                   20
+5 504 Bo… Wobb…         57        17                      4                   18
+6 98^0    Give…         51         2                      7                   20
+# ℹ abbreviated name: ¹​first_week_at_best_rank</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  artist  track first_rank best_rank first_week_at_best_r…¹ total_weeks_on_chart
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;                  &lt;int&gt;                &lt;int&gt;
+1 Madonna Music         41         1                      6                   24
+# ℹ abbreviated name: ¹​first_week_at_best_rank</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  artist  track first_rank best_rank first_week_at_best_r…¹ total_weeks_on_chart
+  &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt;     &lt;dbl&gt;                  &lt;int&gt;                &lt;int&gt;
+1 Lonest… Amaz…         81         1                     40                   55
+# ℹ abbreviated name: ¹​first_week_at_best_rank</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  artist track  first_rank best_rank first_week_at_best_r…¹ total_weeks_on_chart
+  &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt;                  &lt;int&gt;                &lt;int&gt;
+1 Creed  Higher         81         7                     46                   57
+# ℹ abbreviated name: ¹​first_week_at_best_rank</code></pre>
+</div>
+</div>
+</section>
+<section id="highlighting-notable-top-10-songs" class="level2">
+<h2 class="anchored" data-anchor-id="highlighting-notable-top-10-songs">Highlighting Notable Top-10 Songs</h2>
+<p>We filter the dataset to include only songs that reached the top 10 (peak rank &lt;= 10). We display these songs in gray, while highlighting the three notable songs identified in the previous exercise with distinct colors and a legend.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 
 </main>
