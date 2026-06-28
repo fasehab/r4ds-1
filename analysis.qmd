@@ -1,0 +1,9 @@
+---
+title: "Analyzing Music Data"
+author: "Antigravity"
+format: html
+---
+
+## Introduction
+
+This is a Quarto document for analyzing music data.
