@@ -198,3 +198,115 @@ ggplot() +
   )
 ```
 
+## Reading Music Data
+
+We read and print the `music.csv` dataset using the `readr` package. According to the dataset documentation, `artist.familiarity` measures how familiar the artist is to listeners on a scale of 0 to 1, while `artist.hotttnesss` measures the artist's popularity on a scale of 0 to 1 at the time of data download (December 2010).
+
+```{r}
+#| message: false
+music <- read_csv("data/music.csv")
+music |> 
+  select(artist.familiarity, artist.hotttnesss, song.year, song.tempo) |> 
+  summary()
+```
+
+## Distribution of Song Years
+
+We plot the distribution of the release years for the songs in the dataset. Note that some songs have their year recorded as `0` in the database; these are filtered out before plotting.
+
+```{r}
+music_clean <- music |> 
+  filter(song.year != 0)
+
+n_songs <- nrow(music_clean)
+
+ggplot(music_clean, aes(x = song.year)) +
+  geom_histogram(binwidth = 1, fill = "steelblue", color = "white") +
+  labs(
+    title = "Distribution of Song Years",
+    subtitle = paste("Number of songs used:", n_songs),
+    x = "Year",
+    y = "Count"
+  )
+```
+
+## Human-Readable Song Data
+
+We select and print a subset of the dataset containing the most human-readable columns: artist name, location, coordinates (latitude and longitude), genre terms, familiarity, hotness, song title, and year.
+
+```{r}
+music |> 
+  select(
+    artist.name,
+    artist.location,
+    artist.latitude,
+    artist.longitude,
+    artist.terms,
+    artist.familiarity,
+    artist.hotttnesss,
+    song.title,
+    song.year
+  ) |> 
+  head()
+```
+
+## Counting Placeholder Values
+
+Many columns in the dataset use placeholder values (typically `0` for numeric columns) to represent missing data. We count the number of placeholder values (`0`) in each of the selected columns:
+
+```{r}
+music |> 
+  summarise(
+    artist.location = sum(artist.location == 0),
+    release.name = sum(release.name == 0),
+    song.title = sum(song.title == 0),
+    song.year = sum(song.year == 0),
+    artist.familiarity = sum(artist.familiarity == 0),
+    artist.hotttnesss = sum(artist.hotttnesss == 0)
+  ) |> 
+  pivot_longer(
+    cols = everything(),
+    names_to = "column",
+    values_to = "placeholder_count"
+  )
+```
+
+## Artist Locations Map
+
+Only 3,742 out of 10,000 artists have usable location coordinates, while the remaining 6,258 have placeholder coordinates of (0, 0), which makes mapping them impossible.
+
+```{r}
+# Count usable vs placeholder coordinates
+music |> 
+  summarise(
+    placeholder = sum(artist.latitude == 0 & artist.longitude == 0),
+    usable = sum(artist.latitude != 0 | artist.longitude != 0)
+  ) |> 
+  pivot_longer(
+    cols = everything(),
+    names_to = "coordinate_status",
+    values_to = "count"
+  )
+
+# Plot the map
+library(maps)
+world_map <- map_data("world")
+
+ggplot() +
+  geom_polygon(data = world_map, aes(x = long, y = lat, group = group), fill = "gray90", color = "white") +
+  geom_point(
+    data = filter(music, (artist.latitude != 0 | artist.longitude != 0) & song.year != 0),
+    aes(x = artist.longitude, y = artist.latitude, color = song.year),
+    alpha = 0.6,
+    size = 0.8
+  ) +
+  scale_color_viridis_c(option = "plasma", name = "Year") +
+  theme_minimal() +
+  labs(
+    title = "Geographic Distribution of Artist Locations by Song Year",
+    subtitle = "Color indicates the release year for 1,825 artists with usable coordinates and non-zero years",
+    x = "Longitude",
+    y = "Latitude"
+  )
+```
+

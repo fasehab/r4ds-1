@@ -203,6 +203,99 @@ ul.task-list li input[type="checkbox"] {
 </div>
 </div>
 </section>
+<section id="reading-music-data" class="level2">
+<h2 class="anchored" data-anchor-id="reading-music-data">Reading Music Data</h2>
+<p>We read and print the <code>music.csv</code> dataset using the <code>readr</code> package. According to the dataset documentation, <code>artist.familiarity</code> measures how familiar the artist is to listeners on a scale of 0 to 1, while <code>artist.hotttnesss</code> measures the artist’s popularity on a scale of 0 to 1 at the time of data download (December 2010).</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code> artist.familiarity artist.hotttnesss   song.year        song.tempo    
+ Min.   :0.0000     Min.   :0.0000    Min.   :   0.0   Min.   :  0.00  
+ 1st Qu.:0.4676     1st Qu.:0.3253    1st Qu.:   0.0   1st Qu.: 96.96  
+ Median :0.5636     Median :0.3807    Median :   0.0   Median :120.16  
+ Mean   :0.5652     Mean   :0.3856    Mean   : 934.7   Mean   :122.90  
+ 3rd Qu.:0.6680     3rd Qu.:0.4539    3rd Qu.:2000.0   3rd Qu.:144.01  
+ Max.   :1.0000     Max.   :1.0825    Max.   :2010.0   Max.   :262.83  </code></pre>
+</div>
+</div>
+</section>
+<section id="distribution-of-song-years" class="level2">
+<h2 class="anchored" data-anchor-id="distribution-of-song-years">Distribution of Song Years</h2>
+<p>We plot the distribution of the release years for the songs in the dataset. Note that some songs have their year recorded as <code>0</code> in the database; these are filtered out before plotting.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="human-readable-song-data" class="level2">
+<h2 class="anchored" data-anchor-id="human-readable-song-data">Human-Readable Song Data</h2>
+<p>We select and print a subset of the dataset containing the most human-readable columns: artist name, location, coordinates (latitude and longitude), genre terms, familiarity, hotness, song title, and year.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 9
+  artist.name      artist.location artist.latitude artist.longitude artist.terms
+  &lt;chr&gt;                      &lt;dbl&gt;           &lt;dbl&gt;            &lt;dbl&gt; &lt;chr&gt;       
+1 Casual                         0             0                0   hip hop     
+2 The Box Tops                   0            35.1            -90.0 blue-eyed s…
+3 Sonora Santanera               0             0                0   salsa       
+4 Adam Ant                       0             0                0   pop rock    
+5 Gob                            0             0                0   pop punk    
+6 Jeff And Sheri …               0             0                0   southern go…
+# ℹ 4 more variables: artist.familiarity &lt;dbl&gt;, artist.hotttnesss &lt;dbl&gt;,
+#   song.title &lt;dbl&gt;, song.year &lt;dbl&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="counting-placeholder-values" class="level2">
+<h2 class="anchored" data-anchor-id="counting-placeholder-values">Counting Placeholder Values</h2>
+<p>Many columns in the dataset use placeholder values (typically <code>0</code> for numeric columns) to represent missing data. We count the number of placeholder values (<code>0</code>) in each of the selected columns:</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 2
+  column             placeholder_count
+  &lt;chr&gt;                          &lt;int&gt;
+1 artist.location                 9999
+2 release.name                    9989
+3 song.title                      9992
+4 song.year                       5320
+5 artist.familiarity                24
+6 artist.hotttnesss                496</code></pre>
+</div>
+</div>
+</section>
+<section id="artist-locations-map" class="level2">
+<h2 class="anchored" data-anchor-id="artist-locations-map">Artist Locations Map</h2>
+<p>Only 3,742 out of 10,000 artists have usable location coordinates, while the remaining 6,258 have placeholder coordinates of (0, 0), which makes mapping them impossible.</p>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 2 × 2
+  coordinate_status count
+  &lt;chr&gt;             &lt;int&gt;
+1 placeholder        6258
+2 usable             3742</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'maps'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:purrr':
+
+    map</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 
 </main>
 <!-- /main column -->
